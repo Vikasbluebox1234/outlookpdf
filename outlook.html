@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Outlook Add-in</title>
+</head>
+<body>
+    <h1>Outlook Add-in</h1>
+    <button id="readPdfButton">Read PDF Attachments</button>
+</body>
+</html>
+
+Office.onReady(function (info) {
+    if (info.host === Office.MailboxEnums.HostType.Outlook) {
+        document.getElementById("readPdfButton").onclick = readPdfAttachments;
+    }
+});
+
+function readPdfAttachments() {
+    Office.context.mailbox.item.getAttachmentsAsync(function (result) {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+            var attachments = result.value;
+            var pdfAttachmentNames = [];
+
+            for (var i = 0; i < attachments.length; i++) {
+                var attachment = attachments[i];
+
+                if (attachment.attachmentType === Office.MailboxEnums.AttachmentType.File &&
+                    attachment.name.toLowerCase().endsWith(".pdf")) {
+                    // This is a PDF attachment
+                    pdfAttachmentNames.push(attachment.name);
+                }
+            }
+
+            if (pdfAttachmentNames.length > 0) {
+                console.log("PDF Attachments: " + pdfAttachmentNames.join(", "));
+            } else {
+                console.log("No PDF attachments found.");
+            }
+        }
+    });
+}

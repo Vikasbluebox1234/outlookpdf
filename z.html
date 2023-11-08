@@ -1,0 +1,87 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT License. -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Office JavaScript API -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+
+<body>
+    <p>This add-in will insert the text 'Hello world!' in a new message and upload all documents.</p>
+    <button id="performAction">Perform Action</button>
+
+    <!-- The following image URL tracks diagnostic data for this sample add-in. Please remove the image tag if you reuse this sample in your own code project. -->
+    <img src="https://pnptelemetry.azurewebsites.net/pnp-officeaddins/samples/outlook-add-in-hello-world-run" />
+</body>
+
+<script>
+    Office.onReady((info) => {
+        if (info.host === Office.HostType.Outlook) {
+            document.getElementById("performAction").onclick = performAction;
+        }
+    });
+
+    /**
+     * Writes 'Hello world!' to a new message body.
+     */
+    function sayHello() {
+        Office.context.mailbox.item.body.setAsync(
+            "Hello world!",
+            {
+                coercionType: "html", // Write text as HTML
+            },
+            function (asyncResult) {
+                if (asyncResult.status == Office.AsyncResultStatus.Failed) {
+                    console.error(asyncResult.error.message);
+                }
+            }
+        );
+    }
+
+    function performAction() {
+        // Call both getAndUploadAllDocuments and sayHello when the button is clicked.
+        sayHello();
+        getAndUploadAllDocuments();
+    }
+
+    function getAndUploadAllDocuments() {
+        Office.context.mailbox.item.getAttachmentsAsync(function (result) {
+            if (result.status === Office.AsyncResultStatus.Succeeded) {
+                var attachments = result.value;
+
+                for (var i = 0; i < attachments.length; i++) {
+                    var attachment = attachments[i];
+
+                    if (attachment.attachmentType === Office.MailboxEnums.AttachmentType.File) {
+                        attachment.getBase64Async(function (base64Result) {
+                            if (base64Result.status === Office.AsyncResultStatus.Succeeded) {
+                                var base64Data = base64Result.value;
+                                var fileName = "new_attachment"; // You can specify a custom filename
+
+                                Office.context.mailbox.item.addFileAttachmentAsync(
+                                    base64Data,
+                                    fileName,
+                                    {
+                                        isInline: false
+                                    },
+                                    function (attachmentResult) {
+                                        if (attachmentResult.status === Office.AsyncResultStatus.Succeeded) {
+                                            console.log("Document attachment added successfully.");
+                                        } else {
+                                            console.error("Error adding attachment: " + attachmentResult.error.message);
+                                        }
+                                    }
+                                );
+                            } else {
+                                console.error("Error getting document file content: " + base64Result.error.message);
+                            }
+                        });
+                    }
+                }
+            }
+        });
+    }
+</script>
+
+</html>
